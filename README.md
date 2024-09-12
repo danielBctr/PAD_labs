@@ -32,7 +32,7 @@ With the rise of streaming services, user-driven reviews help viewers find hidde
 
 ### System Architecture
 
-![Diagram](/img/diagram.jpg "System diagram")
+![Diagram](/img/daigram4.jpg "System diagram")
 
  ## Communication Patterns
 
