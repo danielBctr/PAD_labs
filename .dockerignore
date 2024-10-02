@@ -1,0 +1,32 @@
+# Python bytecode
+__pycache__
+*.pyc
+*.pyo
+
+# Virtual environment
+venv
+env
+
+# Docker files
+Dockerfile
+docker-compose.yml
+
+# Local configuration files
+*.env
+*.local
+
+# Logs
+*.log
+
+# Temporary files
+tmp
+*.tmp
+
+# IDE/editor-specific files
+.vscode
+.idea
+*.swp
+*.swo
+
+# Node modules if applicable
+node_modules
