@@ -1,0 +1,71 @@
+
+services:
+  gateway:
+    build: ./gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-service  # Change to lowercase
+      - movie-manage-service  # Change to lowercase
+    networks:
+      - movie-network
+
+  auth-service:  # Change to lowercase
+    build: ./auth-service
+    ports:
+      - "5000:5000"
+    depends_on:
+      - auth-db  # Change to lowercase
+    networks:
+      - movie-network
+
+  auth-db:  # Change to lowercase
+    build: ./auth-db
+    environment:
+      POSTGRES_DB: logindb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - movie-network
+
+  movie-manage-service:  # Change to lowercase
+    build: ./movie-manage-service
+    ports:
+      - "5001:5001"
+    depends_on:
+      - movie-db  # Change to lowercase
+      - redis
+    networks:
+      - movie-network
+  
+  movie-db:  # Change to lowercase
+    build: ./movie-db
+    environment:
+      POSTGRES_DB: artdb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    volumes:
+      - movie-db-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - movie-network
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - movie-network
+
+networks:
+  movie-network:  # Define the missing movie-network
+    driver: bridge
+
+volumes:
+  auth-db-data:
+  movie-db-data:
