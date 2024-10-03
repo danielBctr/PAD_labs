@@ -371,38 +371,7 @@ def update_profile():
     else:
         return jsonify({'message': 'Profile updated successfully'}), 200
 
-@app.route('/api/movies/profile', methods=['DELETE'])
-@jwt_required()
-def delete_profile():
-    user_id = get_jwt_identity()
-
-    headers = {
-        'Authorization': f'{request.headers.get("Authorization")}'
-    }
-
-    # Send a DELETE request to the login service to delete the user profile
-    delete_response = requests.delete(f'{LOGIN_SERVICE_URL}/users/{user_id}', headers=headers)
-    
-    if delete_response.status_code != 200:
-        return jsonify({'message': delete_response.json().get('message', 'Error occurred')}), delete_response.status_code
-    
-    # Delete all reviews by this user
-    Reviews.query.filter_by(user_id=user_id).delete()
-    db.session.commit()
-
-    return jsonify({'message': 'Account and associated reviews deleted successfully'}), 200
-
-# Authentication routes
-
-@app.route('/api/movies/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    
-    if not data or not data.get('username') or not data.get('password'):
-        return jsonify({'message': 'Missing username or password'}), 400
-
-    # Send a POST request to the login service to authenticate the user
-    login_response = requests.post(f'{LOGIN_SERVICE_URL}/login', json=data)
-    
-    if login_response.status_code != 200:
-        return jsonify({'message': login_response.json().get('message', 'Login failed')}), login_response.status_code
+@app.route('/api/movies/cache/clear', methods=['DELETE'])
+def clear_all_cache():
+    redis_client.flushall()
+    return jsonify({'message': 'All cache cleared successfully'}), 200

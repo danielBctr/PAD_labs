@@ -29,7 +29,7 @@ def initialize_app():
     rate_limiter = Limiter(
         key_func=get_remote_address,
         app=application,
-        default_limits=["200/day", "50/hour", "5/minute"]
+        default_limits=[""]
     )
 
     # Load routes within the app context

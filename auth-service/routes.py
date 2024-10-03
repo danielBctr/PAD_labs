@@ -51,13 +51,6 @@ def user_logout():
     return jsonify({'message': 'User logged out'}), 200
 
 
-@app_instance.route('/api/auth/protected', methods=['GET'])
-@jwt_required()
-def protected_route():
-    current_identity = get_jwt_identity()
-    return jsonify({'logged_in_as': current_identity}), 200
-
-
 @app_instance.route('/api/auth/status', methods=['GET'])
 def check_status():
     try:
