@@ -1,3 +1,4 @@
+version: '3.8'
 
 services:
   gateway:
@@ -5,67 +6,85 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - auth-service  # Change to lowercase
-      - movie-manage-service  # Change to lowercase
+      - login-service
+      - movie-service
+      - auth-service
     networks:
-      - movie-network
+      - marketplace-network
 
-  auth-service:  # Change to lowercase
-    build: ./auth-service
+  login-service:
+    build: ./login-service
     ports:
       - "5000:5000"
     depends_on:
-      - auth-db  # Change to lowercase
+      - login-database
     networks:
-      - movie-network
+      - marketplace-network
 
-  auth-db:  # Change to lowercase
-    build: ./auth-db
+  login-database:
+    build: ./login-database
     environment:
       POSTGRES_DB: logindb
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
     volumes:
-      - auth-db-data:/var/lib/postgresql/data
+      - login-db-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:
-      - movie-network
+      - marketplace-network
 
-  movie-manage-service:  # Change to lowercase
-    build: ./movie-manage-service
+  movie-manage-service:
+    build: ./art-management-service
     ports:
       - "5001:5001"
     depends_on:
-      - movie-db  # Change to lowercase
+      - art-database
       - redis
     networks:
-      - movie-network
-  
-  movie-db:  # Change to lowercase
-    build: ./movie-db
+      - marketplace-network
+
+  movie-service:
+    build: ./art-management-service
+    depends_on:
+      - art-database
+      - redis
+    deploy:
+      replicas: 3
+    networks:
+      - marketplace-network
+
+  auth-service:
+    build: ./login-service
+    deploy:
+      replicas: 3
+    networks:
+      - marketplace-network
+
+  art-database:
+    build: ./art-database
     environment:
       POSTGRES_DB: artdb
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
     volumes:
-      - movie-db-data:/var/lib/postgresql/data
+      - art-db-data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
     networks:
-      - movie-network
+      - marketplace-network
 
   redis:
     image: redis:latest
     ports:
       - "6379:6379"
     networks:
-      - movie-network
+      - marketplace-network
 
 networks:
-  movie-network:  # Define the missing movie-network
+  marketplace-network:
     driver: bridge
 
 volumes:
-  auth-db-data:
-  movie-db-data:
+  login-db-data:
+  art-db-data:
