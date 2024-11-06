@@ -1,6 +1,98 @@
 # 🎬 Movie Review Platform
 An online platform for users to review movies.
 
+
+## Runnind and Deploying the project
+This project is containerized with Docker for easy deployment and scaling. The architecture consists of multiple microservices including authentication, movie management, and real-time notifications via WebSocket.
+
+### Prerequisites
+
+- Docker (20.10.0 or higher)
+- Docker Compose (2.0.0 or higher)
+- Git
+
+### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/your-org/movie-review-platform.git
+cd movie-review-platform
+```
+
+### Step 2: Build and Run
+
+Build and start all services using Docker Compose:
+
+```bash
+docker-compose up --build
+```
+
+To run in detached mode:
+```bash
+docker-compose up -d --build
+```
+
+### Service Health Checks
+
+Verify the services are running properly:
+
+- Authentication Service: `http://localhost:8000/api/auth/status`
+- Movie Service: `http://localhost:8000/api/movies/status`
+- WebSocket Server: `ws://localhost:8001`
+
+### Container Management
+
+List running containers:
+```bash
+docker ps
+```
+
+View service logs:
+```bash
+# All services
+docker-compose logs
+
+# Specific service
+docker-compose logs auth-service
+docker-compose logs movie-service
+```
+
+Stop and remove containers:
+```bash
+docker-compose down
+```
+
+Remove containers and volumes:
+```bash
+docker-compose down -v
+```
+
+### Cache Management
+
+Clear Redis cache:
+```bash
+docker-compose exec redis redis-cli FLUSHALL
+```
+
+### Scaling Services
+
+Scale specific services:
+```bash
+docker-compose up -d --scale movie-service=3
+```
+
+### Production Deployment
+
+For production deployment, use the production configuration:
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+## Postman Collection
+
+[Postman Collection for the Movie-Review-Platform](Movie-Review-Platform.postman_collection.json)
+
+
+
 ## Application Suitability
 
 ### Why this app ? 
@@ -32,22 +124,7 @@ With the rise of streaming services, user-driven reviews help viewers find hidde
 
 ### System Architecture
 
-![Diagram](/img/daigram4.jpg "System diagram")
-
- ## Communication Patterns
-
-### Synchronous
- - **gRPC:**
-    - ***Advantages*** : Fast, low-latency, efficient, and platform-agnostic.
-    - ***Use cases*** : Internal communication between microservices, e.g., fetching movie details, updating ratings.
-- **REST (HTTP):**
-    - ***Advantages*** : Widely adopted, easy to understand, and supports a wide range of clients.
-    - ***Use cases*** : External communication with clients, e.g., API endpoints for movie search.
-
-### Asynchronous
-- **WebSockets:**
-    - ***Advantages*** : Real-time communication, low latency, and efficient for real-time updates.
-    - ***Use cases*** : new review notifications, updates movies, recommendations.
+![Diagram](/img/Diagram1.jpg "System diagram")
  
 ## Tech Stack
 - 🐍 Flask (Python): REST API microservices.
@@ -57,397 +134,400 @@ With the rise of streaming services, user-driven reviews help viewers find hidde
 - 🔐 JWT: Secure token-based authentication.
 - 🐋 Docker: Containerization for scalable deployment.
 
-## Data Management
-Both microservices use PostgreSQL for data storage. Additional services like Redis can be used for caching popular movies and reviews.
+## Data Management Design
 
 ### Tables
-- **User table**:
-```json
-{
-    "id": "int",
+
+- **User Model**
+  ```json
+  {
+    "userId": "int",
     "username": "string",
     "email": "string",
-    "password": "hashed_string"
-}
-```
-- **Movie table**:
-```json
-{
+    "password": "string"
+  }
+  ```
+
+- **Movie Model**
+  ```json
+  {
     "id": "int",
     "title": "string",
     "description": "string",
-    "release_date": "date",
-    "genre": "string"
-}
-```
-- **Review table**:
+    "rating": "float",
+    "genre": "string",
+    "poster_url": "string",
+    "release_date": "date"
+  }
+  ```
+
+## Status Endpoints
+
+`GET /api/auth/status` - Check if the authentication service is running.
+
+**Response:**
+
+- 200 OK
+  ```json
+  {
+    "status": "OK",
+    "database": "Connected"
+  }
+  ```
+
+- 500 Server Internal Error
+  ```json
+  {
+    "status": "ERROR",
+    "database": "Not connected",
+    "error": "str(e)"
+  }
+  ```
+
+`GET /api/movies/status` - Check if the movie service is running.
+
+**Response:**
+
+- 200 OK
+  ```json
+  {
+    "status": "OK",
+    "database": "Connected"
+  }
+  ```
+
+- 500 Server Internal Error
+  ```json
+  {
+    "status": "ERROR",
+    "database": "Not connected",
+    "error": "str(e)"
+  }
+  ```
+
+## Authentication Service Endpoints
+
+`POST /api/auth/register` - Register a new user.
+
+**Request:**
 ```json
 {
+  "username": "string",
+  "email": "string",
+  "password": "string",
+  "confirm_password": "string"
+}
+```
+
+**Response:**
+
+- 201 Created
+  ```json
+  {
+    "message": "User registered successfully"
+  }
+  ```
+
+- 400 Bad Request
+  ```json
+  {
+    "message": "Username already exists"
+  }
+  ```
+
+`POST /api/auth/login` - Log in a user.
+
+**Request:**
+```json
+{
+  "email": "string",
+  "password": "string"
+}
+```
+
+**Response:**
+
+- 200 OK
+  ```json
+  {
+    "message": "Login successful",
+    "access_token": "string",
+    "user": "string"
+  }
+  ```
+
+- 401 Unauthorized
+  ```json
+  {
+    "message": "Invalid email or password"
+  }
+  ```
+
+`POST /api/auth/logout` - Log out a user.
+
+**Header:**
+```
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+- 200 OK
+  ```json
+  {
+    "message": "User logged out"
+  }
+  ```
+
+## Movie Service Endpoints
+
+`GET /api/movies` - Get all movies.
+
+**Response:**
+
+- 200 OK
+  ```json
+  [
+    {
+      "id": "int",
+      "title": "string",
+      "description": "string",
+      "rating": "float",
+      "genre": "string",
+      "poster_url": "string",
+      "release_date": "date"
+    }
+  ]
+  ```
+
+`GET /api/movies/{id}` - Get a specific movie.
+
+**Response:**
+
+- 200 OK
+  ```json
+  {
     "id": "int",
-    "movie_id": "int",
-    "user_id": "int",
-    "rating": "int",
-    "review_text": "string",
-    "created_at": "datetime"
-}
+    "title": "string",
+    "description": "string",
+    "rating": "float",
+    "genre": "string",
+    "poster_url": "string",
+    "release_date": "date"
+  }
+  ```
+
+- 404 Not Found
+  ```json
+  {
+    "message": "Movie not found"
+  }
+  ```
+
+`GET /api/movies/popular` - Get popular movies (cached).
+
+**Response:**
+
+- 200 OK
+  ```json
+  {
+    "message": "Results retrieved from cache",
+    "data": [
+      {
+        "id": "int",
+        "title": "string",
+        "description": "string",
+        "rating": "float",
+        "genre": "string",
+        "poster_url": "string",
+        "release_date": "date"
+      }
+    ]
+  }
+  ```
+
+`GET /api/movies/search` - Search movies with filters.
+
+**Query Parameters:**
+- title (optional)
+- genre (optional)
+- min_rating (optional)
+- max_rating (optional)
+
+**Response:**
+
+- 200 OK
+  ```json
+  {
+    "message": "Results retrieved from cache",
+    "data": [
+      {
+        "id": "int",
+        "title": "string",
+        "description": "string",
+        "rating": "float",
+        "genre": "string",
+        "poster_url": "string",
+        "release_date": "date"
+      }
+    ]
+  }
+  ```
+
+`POST /api/movies` - Create a new movie.
+
+**Header:**
+```
+Authorization: Bearer <token>
 ```
 
-### Authentication Endpoints
-- **POST /api/auth/login**<br>
- *Login a user and return a JWT token.*
-- **Request:**
- ```json
- {
-  "email": "movielover@mail.com",
-  "password": "somePass"
-}
-```
-- **Response:**
-    - **200 OK**
-    ```json
-    {
-  "message": "Login successful",
-  "token": "JWT"
-    }
-    ```
-    - **401 Unauthorized**
-    ```json
-    {
-  "message": "Invalid email or password"
-    }
-    ```
-    - **500 Internal Server Error**
-    ```json
-    {
-  "message": "Something went wrong. Please try again later."
-    }
-    ```
-
-- **POST /api/auth/register**<br>
- *Register a new user*
-- **Request:**
+**Request:**
 ```json
 {
-  "username": "MovieMan",
-  "email": "movieman21@mail.com",
-  "password": "anotherPass"
+  "title": "string",
+  "description": "string",
+  "rating": "float",
+  "genre": "string",
+  "poster_url": "string",
+  "release_date": "date"
 }
 ```
-- **Responses:**
-    - **201 Created**
-    ```json
-    {
-  "message": "User registered successfully"
-    }
-    ```
-    - **409 Conflict**
-    ```json
-    {
-  "message": "Email already in use."
-    }
-    ```   
-### Movie Management Endpoints
-- **GET /api/movies/{id}**<br>
- *Get movie details by ID.*
 
-- **Response:**
-    - **200 OK**
-    ```json
-    {
-  "title": "Inception",
-  "description": "A mind-bending thriller...",
-  "release_date": "2010-07-16",
-  "genre": "Sci-Fi"
-    }
-    ```
-    - **404 Not Found**
-    ```json
-    {
-  "message": "Movie not found."
-    }
-    ```
+**Response:**
 
-- **POST /api/movies**<br>
- *create a new movie.*
- - **Request:**
- ```json
- {
-  "title": "New Movie",
-  "description": "Movie description...",
-  "release_date": "2024-01-01",
-  "genre": "Action"
-}
-```
-- **Response:**
-    - **201 Created**
-    ```json
-    {
-  "message": "Movie added successfully"
-    }
-    ```
-    - **400 Bad Request**
-    ```json
-    {
-  "message": "Invalid movie data."
-    }
-    ```
-- **PUT /api/movies/{id}**<br>
- *Update movie details by ID.*
-
- - **Request:**
- ```json
- {
-  "title": "Updated Movie Title",
-  "description": "Updated movie description",
-  "release_date": "2025-01-01",
-  "genre": "Action"
-}
-```
-- **Response:**
-    - **200 OK**
-    ```json
-    {
-  "message": "Movie updated successfully"
-    }
-    ```
-    - **404 Not Found**
-    ```json
-    {
-  "message": "Movie not found."
-    }
-    ```
-
-- **DELETE /api/movies/{id}**<br>
- *Delete a movie by ID.*
-- **Response:**
-    - **200 OK**
-    ```json
-    {
-  "message": "Movie deleted successfully"
-    }
-    ```
-    - **404 Not Found**
-    ```json
-    {
-  "message": "Movie not found."
-    }
-    ```
-
-### Review Endpoints
-- **POST /api/reviews**<br>
-*Add a review to a movie.*
-- **Request:**
-    ```json
-    {
-  "movie_id": 1,
-  "rating": 5,
-  "review_text": "Amazing movie!"
-    }
-    ```
-- **Response:**
-    - **201 Created**
-    ```json
-    {
-    "message": "Review submitted!"
-    }
-    ```
-    - **404 Not Found**
-    ```json
-    {
-  "message": "Movie not found."
-    }
-    ```
-    - **500 Internal Server Error**
-    ```json
-    {
-  "message": "Error submitting review."
-    }
-    ```
-
-- **PUT /api/reviews/{id}**<br>
-*Update a review by ID.*
-- **Request:**
-    ```json
-    {
-  "rating": 4,
-  "review_text": "Updated review text"
-    }
-    ```
-- **Response:**
-    - **200 OK**
-    ```json
-    {
-  "message": "Review updated successfully"
-    }
-    ```
-    - **404 Not Found**
-    ```json
-    {
-  "message": "Review not found."
-    }
-    ```
-    - **400 Bad Request**
-    ```json
-    {
-  "message": "Invalid review data."
-    }
-    ```
-- **DELETE /api/reviews/{id}**<br>
-*Delete a review by ID.*
-- **Response:**
-    - **200 OK**
-    ```json
-    {
-  "message": "Review deleted successfully"
-    }
-    ```
-
-    - **404 Not Found**
-    ```json
-    {
-  "message": "Review not found."
-    }
-    ```
-    - **500 Internal Server Error**
-    ```json
-    {
-  "message": "Error deleting review."
-    }
-    ```
-- **GET /api/reviews/{movie_id}**<br>
-*Get all reviews for a movie.*
-- **Response:**
-    - **200 OK**
-    ```json
-    [
+- 201 Created
+  ```json
   {
-    "review_id": 1,
-    "movie_id": 123,
-    "user": "MovieMan1",
-    "rating": 5,
-    "review_text": "Amazing movie!",
-    "created_at": "date1"
-  },
-  {
-    "review_id": 2,
-    "movie_id": 123,
-    "user": "MovieMan2",
-    "rating": 4,
-    "review_text": "It s*cks.",
-    "created_at": "date2"
+    "message": "Movie created",
+    "id": "int"
   }
-    ]
-    ```
-    - **400 Bad Request**
-    ```json
-    {
-  "message": "Invalid movie ID."
-    }
-    ```
-    - **404 Not Found**
-    ```json
-    {
-  "message": "No reviews found for this movie."
-    }
-    ```
-- **GET /api/reviews/user/{user_id}**<br>
-*Get all reviews posted by a specific user.*
-- **Response:**
-    - **200 OK**
-    ```json
-    [
+  ```
+
+`PUT /api/movies/{id}` - Update a movie.
+
+**Header:**
+```
+Authorization: Bearer <token>
+```
+
+**Request:**
+```json
+{
+  "title": "string",
+  "description": "string",
+  "rating": "float",
+  "genre": "string",
+  "poster_url": "string",
+  "release_date": "date"
+}
+```
+
+**Response:**
+
+- 200 OK
+  ```json
   {
-    "review_id": 1,
-    "movie_id": 123,
-    "movie_title": "Inception",
-    "rating": 5,
-    "review_text": "F*cking good!",
-    "created_at": "date3"
-  },
-  {
-    "review_id": 3,
-    "movie_id": 456,
-    "movie_title": "The Matrix",
-    "rating": 4,
-    "review_text": "Red or Blue?",
-    "created_at": "date4"
+    "message": "Movie updated successfully"
   }
-    ]
-    ```
-    - **404 Not Found**
-    ```json
-    {
-  "message": "No reviews found for this user."
-    }
-    ```
-### Other Endpoints
-  - **GET /api/reviews**<br>
-  *Users connect to the WebSocket to receive live updates for new reviews in real-time.*
-  - **Successful Connection**
-    - **101 Switching Protocols (WebSocket handshake)**
-    ```json
-    {
-    "message": "Connection established. You are now subscribed to live review updates."
-    }
-    ```
-  - **Live Notification**
-    ```json
-    {
-    "event": "new_review",
-    "data": {
-      "review_id": 1234,
-      "movie_title": "Inception",
-      "rating": 5,
-      "review_text": "Amazing movie!",
-      "created_at": "date5",
-      "user": "JMovieMan39"
-    }
-    }
-    ```
-- **Post /api/subscribe**<br>
-*This allows users to subscribe to live updates for reviews of a specific movie.*
-- **Body**
-    ```json
-    {
-    "user_id": 42,
-    "movie_id": 123
-    }
-    ```
-- **Response:**
-    - 200 OK
-    ```json
-    {
-  "message": "Successfully subscribed to movie review updates."
-    }
-    ```
-    - 404 Not Found
-    ```json
-    {
-  "message": "Movie not found."
-    }
-    ```
-- **Post /api/unsubscribe**<br>
-*This allows users to unsubscribe from live updates for reviews of a specific movie.*
-- **Body**
-    ```json
-    {
-    "user_id": 42,
-    "movie_id": 123
-    }
-    ```
-- **Response:**
-    - 200 OK
-    ```json
-    {
-  "message": "Successfully unsubscribed from movie review updates."
-    }
-    ```
-    - 404 Not Found
-    ```json
-    {
-  "message": "Subscription not found."
-    }
-    ```
+  ```
+
+`DELETE /api/movies/{id}` - Delete a movie.
+
+**Header:**
+```
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+- 200 OK
+  ```json
+  {
+    "message": "Movie deleted successfully"
+  }
+  ```
+
+## WebSocket Implementation
+
+`ws://localhost:PORT` - WebSocket connection endpoint
+
+### Events
+
+- message
+- join_notification
+- leave_notification
+- new_review
+
+### Subscription
+
+`join_notification` - Join a movie review room
+
+**Request:**
+```json
+{
+  "user_id": "string",
+  "room_id": "string"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "User <user_id> has joined the room <room_id>"
+}
+```
+
+### Updates
+
+`new_review` - Send a new review notification
+
+**Request:**
+```json
+{
+  "user_id": "string",
+  "room_id": "string",
+  "review_title": "string"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "User <user_id> added a new review: <review_title>"
+}
+```
+
+### Unsubscription
+
+`leave_notification` - Leave a movie review room
+
+**Request:**
+```json
+{
+  "user_id": "string",
+  "room_id": "string"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "User <user_id> has left the room <room_id>"
+}
+```
+
+## Cache Management
+
+`DELETE /api/movies/cache/clear` - Clear all cache
+
+**Response:**
+
+- 200 OK
+  ```json
+  {
+    "message": "All cache cleared successfully"
+  }
+  ```
 ## Deployment and Scaling
 - Each microservice will be containerized in separate **Docker** containers, ensuring isolation, consistent environments, and compatibility across different machines. 
 - Using **Docker Compose**, the deployment process will coordinate multi-container configurations, making it simpler to set up networking, volumes, and scalability for each service. A default network will be configured to allow services to communicate via service names.
