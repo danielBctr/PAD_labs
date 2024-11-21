@@ -2,6 +2,9 @@ from flask import Flask, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_cors import CORS
 import json
+from prometheus_flask_exporter import PrometheusMetrics
+import eventlet
+import eventlet.wsgi
 
 app = Flask(__name__)
 CORS(app)
@@ -21,7 +24,7 @@ socketio = SocketIO(
     ping_interval=25,
     max_http_buffer_size=1e8
 )
-
+metrics = PrometheusMetrics(app)
 # Dummy database of existing movie IDs
 existing_movie_ids = {'1', '2', '3'}
 

@@ -4,6 +4,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_jwt_extended import JWTManager
 from datetime import timedelta
+from prometheus_flask_exporter import PrometheusMetrics
 
 # Define token lifespan
 TOKEN_VALIDITY = timedelta(minutes=5)
@@ -11,6 +12,7 @@ TOKEN_VALIDITY = timedelta(minutes=5)
 def initialize_app():
     # Create the Flask instance
     application = Flask(__name__)
+    metrics = PrometheusMetrics(application)
 
     # Configure settings for the app
     config_values = {

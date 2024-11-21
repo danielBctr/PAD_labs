@@ -24,3 +24,6 @@ SQLAlchemy==2.0.35
 typing_extensions==4.12.2
 Werkzeug==3.0.4
 wrapt==1.16.0
+Flask-Cors==5.0.0
+prometheus-flask-exporter
+eventle

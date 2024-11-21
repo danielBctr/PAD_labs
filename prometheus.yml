@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 15s  
+  evaluation_interval: 15s 
+
+  external_labels:
+    monitor: 'movie-review-platform'
+
+scrape_configs:
+  - job_name: 'authentication-service'
+    static_configs:
+      - targets: ['auth-service:9090']  
+
+  - job_name: 'movie-manager-service'
+    static_configs:
+      - targets: ['movie-manager-service:9091'] 
